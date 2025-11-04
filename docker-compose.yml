@@ -1,0 +1,24 @@
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oracle-xe
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    environment:
+      ORACLE_PWD: oracle
+      ORACLE_CHARACTERSET: AL32UTF8
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./init-scripts:/opt/oracle/scripts/startup
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+volumes:
+  oracle-data:
+    driver: local
+
+networks:
+  microservices-network:
+    driver: bridge
