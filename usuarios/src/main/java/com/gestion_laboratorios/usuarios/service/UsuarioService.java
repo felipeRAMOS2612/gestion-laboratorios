@@ -1,5 +1,6 @@
 package com.gestion_laboratorios.usuarios.service;
 
+import com.gestion_laboratorios.usuarios.config.JwtTokenUtil;
 import com.gestion_laboratorios.usuarios.dto.*;
 import com.gestion_laboratorios.usuarios.entity.Usuario;
 import com.gestion_laboratorios.usuarios.exception.DuplicateResourceException;
@@ -8,10 +9,13 @@ import com.gestion_laboratorios.usuarios.exception.UsuarioNotFoundException;
 import com.gestion_laboratorios.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +24,8 @@ import java.util.stream.Collectors;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @Transactional
     public UsuarioResponseDto crearUsuario(UsuarioRequestDto request) {
@@ -35,7 +41,7 @@ public class UsuarioService {
 
         Usuario usuario = Usuario.builder()
                 .username(request.getUsername())
-                .password(request.getPassword())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .nombre(request.getNombre())
                 .apellido(request.getApellido())
@@ -162,6 +168,18 @@ public class UsuarioService {
         log.info("Usuario desactivado exitosamente con ID: {}", id);
     }
 
+    @Transactional
+    public void activarUsuario(Long id) {
+        log.info("Activando usuario con ID: {}", id);
+        
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> UsuarioNotFoundException.porId(id));
+        
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+        log.info("Usuario activado exitosamente con ID: {}", id);
+    }
+
     @Transactional(readOnly = true)
     public LoginResponseDto login(LoginRequestDto loginRequest) {
         log.info("Intento de login para usuario: {}", loginRequest.getUsername());
@@ -169,8 +187,8 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(InvalidCredentialsException::credencialesIncorrectas);
 
-        // Validar contraseña (en producción, comparar hash)
-        if (!usuario.getPassword().equals(loginRequest.getPassword())) {
+        // Validar contraseña usando BCrypt
+        if (!passwordEncoder.matches(loginRequest.getPassword(), usuario.getPassword())) {
             log.warn("Contraseña incorrecta para usuario: {}", loginRequest.getUsername());
             throw InvalidCredentialsException.credencialesIncorrectas();
         }
@@ -183,10 +201,17 @@ public class UsuarioService {
 
         log.info("Login exitoso para usuario: {}", loginRequest.getUsername());
         
+        // Generar JWT token
+        String token = jwtTokenUtil.generateToken(
+            usuario.getUsername(), 
+            usuario.getTipoUsuario().name(), 
+            usuario.getId()
+        );
+        
         return LoginResponseDto.builder()
                 .mensaje("Login exitoso")
                 .usuario(mapToResponseDto(usuario))
-                .token("JWT_TOKEN_PLACEHOLDER") // Implementar JWT en el futuro
+                .token(token)
                 .build();
     }
 
@@ -202,5 +227,53 @@ public class UsuarioService {
                 .fechaCreacion(usuario.getFechaCreacion())
                 .fechaActualizacion(usuario.getFechaActualizacion())
                 .build();
+    }
+
+    @Transactional
+    public String iniciarRecuperacionPassword(RecoverPasswordRequestDto request) {
+        log.info("Iniciando recuperación de contraseña para email: {}", request.getEmail());
+        
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado con email: " + request.getEmail()));
+        
+        if (!usuario.getActivo()) {
+            throw new UsuarioNotFoundException("Usuario inactivo");
+        }
+        
+        // Generar token único
+        String token = UUID.randomUUID().toString();
+        usuario.setResetPasswordToken(token);
+        usuario.setResetPasswordExpires(LocalDateTime.now().plusHours(1)); // Expira en 1 hora
+        
+        usuarioRepository.save(usuario);
+        
+        log.info("Token de recuperación generado para usuario: {}", usuario.getUsername());
+        
+        // En un entorno real, aquí se enviaría un email con el token
+        // Para desarrollo, devolvemos el token directamente
+        return token;
+    }
+
+    @Transactional
+    public String restablecerPassword(ResetPasswordRequestDto request) {
+        log.info("Restableciendo contraseña con token: {}", request.getToken());
+        
+        Usuario usuario = usuarioRepository.findByResetPasswordToken(request.getToken())
+                .orElseThrow(() -> new UsuarioNotFoundException("Token de recuperación inválido"));
+        
+        if (usuario.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
+            throw new UsuarioNotFoundException("Token de recuperación expirado");
+        }
+        
+        // Actualizar contraseña
+        usuario.setPassword(passwordEncoder.encode(request.getNuevaPassword()));
+        usuario.setResetPasswordToken(null);
+        usuario.setResetPasswordExpires(null);
+        
+        usuarioRepository.save(usuario);
+        
+        log.info("Contraseña restablecida exitosamente para usuario: {}", usuario.getUsername());
+        
+        return "Contraseña restablecida exitosamente";
     }
 }

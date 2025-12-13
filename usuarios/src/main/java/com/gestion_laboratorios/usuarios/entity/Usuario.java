@@ -67,8 +67,14 @@ public class Usuario {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken;
+
+    @Column(name = "reset_password_expires")
+    private LocalDateTime resetPasswordExpires;
+
     public enum TipoUsuario {
         MEDICO,
-        PACIENTE
+        PACIENTE,
     }
 }

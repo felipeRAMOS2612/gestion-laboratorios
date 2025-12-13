@@ -33,4 +33,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
            "LOWER(u.username) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<Usuario> findBySearchTerm(@Param("searchTerm") String searchTerm);
+    
+    Optional<Usuario> findByResetPasswordToken(String resetPasswordToken);
 }

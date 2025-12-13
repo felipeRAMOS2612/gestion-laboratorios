@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -82,9 +84,44 @@ public class UsuarioController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<Void> activarUsuario(@PathVariable Long id) {
+        usuarioService.activarUsuario(id);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto loginRequest) {
         LoginResponseDto response = usuarioService.login(loginRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<UsuarioResponseDto> registrarUsuario(@Valid @RequestBody UsuarioRequestDto request) {
+        UsuarioResponseDto usuario = usuarioService.crearUsuario(request);
+        return new ResponseEntity<>(usuario, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/recover-password")
+    public ResponseEntity<Map<String, String>> iniciarRecuperacionPassword(
+            @Valid @RequestBody RecoverPasswordRequestDto request) {
+        String token = usuarioService.iniciarRecuperacionPassword(request);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("mensaje", "Si el email existe, se ha enviado un enlace de recuperación");
+        response.put("token", token); // Solo para desarrollo, remover en producción
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> restablecerPassword(
+            @Valid @RequestBody ResetPasswordRequestDto request) {
+        String mensaje = usuarioService.restablecerPassword(request);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("mensaje", mensaje);
+        
         return ResponseEntity.ok(response);
     }
 }
