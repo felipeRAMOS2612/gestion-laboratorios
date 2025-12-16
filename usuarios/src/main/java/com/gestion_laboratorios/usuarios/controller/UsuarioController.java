@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -22,18 +23,28 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UsuarioResponseDto> crearUsuario(@Valid @RequestBody UsuarioRequestDto request) {
         UsuarioResponseDto usuario = usuarioService.crearUsuario(request);
         return new ResponseEntity<>(usuario, HttpStatus.CREATED);
     }
 
+    @PostMapping("/admin/medicos")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioResponseDto> crearMedico(@Valid @RequestBody CreateMedicoRequestDto request) {
+        UsuarioResponseDto usuario = usuarioService.crearMedico(request);
+        return new ResponseEntity<>(usuario, HttpStatus.CREATED);
+    }
+
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioResponseDto>> obtenerTodosLosUsuarios() {
         List<UsuarioResponseDto> usuarios = usuarioService.obtenerTodosLosUsuarios();
         return ResponseEntity.ok(usuarios);
     }
 
     @GetMapping("/activos")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioResponseDto>> obtenerUsuariosActivos() {
         List<UsuarioResponseDto> usuarios = usuarioService.obtenerUsuariosActivos();
         return ResponseEntity.ok(usuarios);
@@ -59,6 +70,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/buscar")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioResponseDto>> buscarUsuarios(@RequestParam String q) {
         List<UsuarioResponseDto> usuarios = usuarioService.buscarUsuarios(q);
         return ResponseEntity.ok(usuarios);
@@ -73,18 +85,21 @@ public class UsuarioController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
         usuarioService.eliminarUsuario(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desactivar")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> desactivarUsuario(@PathVariable Long id) {
         usuarioService.desactivarUsuario(id);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/activar")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> activarUsuario(@PathVariable Long id) {
         usuarioService.activarUsuario(id);
         return ResponseEntity.ok().build();
@@ -98,6 +113,8 @@ public class UsuarioController {
 
     @PostMapping("/register")
     public ResponseEntity<UsuarioResponseDto> registrarUsuario(@Valid @RequestBody UsuarioRequestDto request) {
+        // Registro público: siempre crea PACIENTE. Nunca confiar en rol enviado por el cliente.
+        request.setTipoUsuario(Usuario.TipoUsuario.PACIENTE);
         UsuarioResponseDto usuario = usuarioService.crearUsuario(request);
         return new ResponseEntity<>(usuario, HttpStatus.CREATED);
     }

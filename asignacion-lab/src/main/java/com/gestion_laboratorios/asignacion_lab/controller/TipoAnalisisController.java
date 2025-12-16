@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ public class TipoAnalisisController {
     private final TipoAnalisisService tipoAnalisisService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TipoAnalisisResponseDto> crearTipoAnalisis(@Valid @RequestBody TipoAnalisisRequestDto request) {
         TipoAnalisisResponseDto tipoAnalisis = tipoAnalisisService.crearTipoAnalisis(request);
         return new ResponseEntity<>(tipoAnalisis, HttpStatus.CREATED);
@@ -45,6 +47,7 @@ public class TipoAnalisisController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TipoAnalisisResponseDto> actualizarTipoAnalisis(
             @PathVariable Long id, 
             @Valid @RequestBody TipoAnalisisRequestDto request) {
@@ -53,12 +56,14 @@ public class TipoAnalisisController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminarTipoAnalisis(@PathVariable Long id) {
         tipoAnalisisService.eliminarTipoAnalisis(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TipoAnalisisResponseDto> activarDesactivar(
             @PathVariable Long id, 
             @RequestParam boolean activo) {

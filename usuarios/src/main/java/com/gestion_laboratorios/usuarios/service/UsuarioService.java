@@ -55,6 +55,20 @@ public class UsuarioService {
         return mapToResponseDto(usuarioGuardado);
     }
 
+    @Transactional
+    public UsuarioResponseDto crearMedico(CreateMedicoRequestDto request) {
+        UsuarioRequestDto usuarioRequest = UsuarioRequestDto.builder()
+                .username(request.getUsername())
+                .password(request.getPassword())
+                .email(request.getEmail())
+                .nombre(request.getNombre())
+                .apellido(request.getApellido())
+                .tipoUsuario(Usuario.TipoUsuario.MEDICO)
+                .build();
+
+        return crearUsuario(usuarioRequest);
+    }
+
     @Transactional(readOnly = true)
     public List<UsuarioResponseDto> obtenerTodosLosUsuarios() {
         log.info("Obteniendo todos los usuarios");
@@ -129,14 +143,6 @@ public class UsuarioService {
         
         if (updateDto.getApellido() != null) {
             usuario.setApellido(updateDto.getApellido());
-        }
-        
-        if (updateDto.getTipoUsuario() != null) {
-            usuario.setTipoUsuario(updateDto.getTipoUsuario());
-        }
-        
-        if (updateDto.getActivo() != null) {
-            usuario.setActivo(updateDto.getActivo());
         }
 
         Usuario usuarioActualizado = usuarioRepository.save(usuario);

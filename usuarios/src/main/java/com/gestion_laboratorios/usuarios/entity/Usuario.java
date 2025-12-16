@@ -74,6 +74,7 @@ public class Usuario {
     private LocalDateTime resetPasswordExpires;
 
     public enum TipoUsuario {
+        ADMIN,
         MEDICO,
         PACIENTE,
     }

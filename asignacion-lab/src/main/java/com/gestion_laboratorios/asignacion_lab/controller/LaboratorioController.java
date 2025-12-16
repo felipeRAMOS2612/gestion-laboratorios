@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class LaboratorioController {
     private final LaboratorioService laboratorioService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<LaboratorioResponseDto> crearLaboratorio(@Valid @RequestBody LaboratorioRequestDto request) {
         LaboratorioResponseDto laboratorio = laboratorioService.crearLaboratorio(request);
         return new ResponseEntity<>(laboratorio, HttpStatus.CREATED);
@@ -45,6 +47,7 @@ public class LaboratorioController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<LaboratorioResponseDto> actualizarLaboratorio(
             @PathVariable Long id, 
             @Valid @RequestBody LaboratorioRequestDto request) {
@@ -53,6 +56,7 @@ public class LaboratorioController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> eliminarLaboratorio(@PathVariable Long id) {
         laboratorioService.eliminarLaboratorio(id);
         return ResponseEntity.noContent().build();
@@ -65,6 +69,7 @@ public class LaboratorioController {
     }
 
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<LaboratorioResponseDto> cambiarEstado(
             @PathVariable Long id, 
             @RequestParam Laboratorio.EstadoLaboratorio estado) {
